@@ -1,15 +1,15 @@
 
+import random
 from matplotlib import pyplot as plt
 import numpy as np
 import tensorflow as tf
-
-from tensorflow.keras import backend as K
+from keras import backend as K
 
 import warnings
 warnings.filterwarnings("ignore")
 np.random.seed(0)
 
-from constamts import IMAGE_SIZE, SHAPE, AUTO
+from constants import IMAGE_SIZE, SHAPE, AUTO
 
 def resize_and_crop_image(image, label):
     w = tf.shape(image)[0]
@@ -28,19 +28,29 @@ def resize_and_crop_image(image, label):
 
 def normalize(image, label):
     image = tf.reshape(image, [*IMAGE_SIZE, 3])
-    image = tf.cast(image, tf.float32)/255.0
+    image = tf.cast(image, tf.float32)
+    # image = tf.image.per_image_standardization(image)
     return image, label
 
+def crooping(image):
+    crop_w = int(IMAGE_SIZE[0]*0.95)
+    crop_h = int(IMAGE_SIZE[1]*0.95)
+    crop_or_pad_s = int(IMAGE_SIZE[0]*0.1) + IMAGE_SIZE[0]
+    crop_or_pad_p = int(IMAGE_SIZE[1]*0.1) + IMAGE_SIZE[1]
+    image = tf.image.resize_with_crop_or_pad(image, crop_or_pad_s, crop_or_pad_p)
+    image = tf.image.random_crop(image, [crop_w, crop_h, 3])
+    return image
 
 def augmentation(image, label):
+    if random.randrange(2) % 2 == 0:
+        image = crooping(image)
     image = tf.image.random_flip_left_right(image)
     image = tf.image.random_flip_up_down(image)
-    image = tf.image.random_saturation(image, 0, 2)
+    image = tf.image.rot90(image, k=random.randrange(4))
+    image = tf.image.random_saturation(image, 0.6, 1.6)
     image = tf.image.random_hue(image, 0.08)
-    image = tf.image.random_contrast(image, 0.7, 1.3)
-    image = tf.image.random_brightness(image, 0.15)
+    image = tf.image.random_brightness(image, 0.5)
     return image, label
-
 
 def force_image_sizes(dataset):
     reshape_images = lambda image, label: (tf.reshape(image, SHAPE), label)

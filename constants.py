@@ -1,10 +1,11 @@
 
 import tensorflow as tf
-from tensorflow.keras import backend as K
+from keras import backend as K
 
 print("Tensorflow version " + tf.__version__)
 AUTO = tf.data.experimental.AUTOTUNE
-
+import warnings
+warnings.filterwarnings("ignore")
 try:
     tpu = tf.distribute.cluster_resolver.TPUClusterResolver()
     print('Running on TPU ', tpu.master())
@@ -21,8 +22,8 @@ else:
 print("REPLICAS: ", strategy.num_replicas_in_sync)
 
 
-TEST_DS_PATH =  '/data/test_tfrecords'
-GCS_DS_PATH = '/data/train_tfrecords'
+TEST_DS_PATH =  './data/test_tfrecords'
+GCS_DS_PATH = './data/train_tfrecords'
 
 if strategy.num_replicas_in_sync == 1: # single GPU or CPU
     BATCH_SIZE = 256
@@ -31,8 +32,13 @@ else: # TPU pod
     BATCH_SIZE = 8 * strategy.num_replicas_in_sync
     VALIDATION_BATCH_SIZE = 8 * strategy.num_replicas_in_sync
 
+EPOCHS = 10
+bnmomemtum=0.88
+
 FILENAMES = tf.io.gfile.glob(GCS_DS_PATH+'/*.tfrec')
 TEST_FILENAMES  = tf.io.gfile.glob(TEST_DS_PATH+'/*.tfrec')
+
+weight_path="./{}_weights.best.hdf5".format('model')
 
 IMAGE_SIZE = [64, 64]
 
